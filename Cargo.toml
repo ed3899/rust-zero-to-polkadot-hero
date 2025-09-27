@@ -1,9 +1,13 @@
 [workspace]
+resolver = "3"
+
 members = [
   "config-loader",
   "enum-traits-generics",
   "error-handling",
   "hello_rust",
+  "module-5",
+  "module-5-miniproject",
   "ownership",
   "word_counter",
 ]
