@@ -1,0 +1,9 @@
+[workspace]
+members = [
+  "config-loader",
+  "enum-traits-generics",
+  "error-handling",
+  "hello_rust",
+  "ownership",
+  "word_counter",
+]
