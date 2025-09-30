@@ -8,6 +8,6 @@ members = [
   "hello_rust",
   "module-5",
   "module-5-miniproject",
-  "ownership",
+  "ownership", "rust_rest_api",
   "word_counter",
 ]
