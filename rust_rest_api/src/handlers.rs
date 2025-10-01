@@ -1,10 +1,15 @@
 // src/handlers.rs
-use axum::{extract::State, Json};
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use uuid::Uuid;
 
 use crate::db::DbPool;
-use crate::models::{CreateUser, HealthResponse, User};
+use crate::errors::AppError;
+use crate::models::{CreateUser, HealthResponse, UpdateUser, User};
 use sqlx;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -45,6 +50,24 @@ pub async fn create_user(
     }
 }
 
+pub async fn get_user(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<User>, AppError> {
+    let user = sqlx::query_as!(
+        User,
+        r#"SELECT id, name, email FROM users WHERE id = $1"#,
+        id
+    )
+    .fetch_optional(&state.db)
+    .await?;
+
+    match user {
+        Some(u) => Ok(Json(u)),
+        None => Err(AppError::NotFound),
+    }
+}
+
 pub async fn list_users(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<User>>, (axum::http::StatusCode, String)> {
@@ -54,6 +77,54 @@ pub async fn list_users(
 
     match res {
         Ok(users) => Ok(Json(users)),
-        Err(err) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", err))),
+        Err(err) => Err((
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            format!("DB error: {}", err),
+        )),
+    }
+}
+
+/// Update a user by ID
+pub async fn update_user(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<UpdateUser>,
+) -> Result<Json<User>, AppError> {
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        UPDATE users
+        SET name = COALESCE($2, name),
+            email = COALESCE($3, email)
+        WHERE id = $1
+        RETURNING id, name, email
+        "#,
+        id,
+        payload.name,
+        payload.email
+    )
+    .fetch_optional(&state.db)
+    .await?;
+
+    match user {
+        Some(u) => Ok(Json(u)),
+        None => Err(AppError::NotFound),
+    }
+}
+
+/// Delete a user by ID
+pub async fn delete_user(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<String>, AppError> {
+    let rows_affected = sqlx::query!(r#"DELETE FROM users WHERE id = $1"#, id)
+        .execute(&state.db)
+        .await?
+        .rows_affected();
+
+    if rows_affected == 0 {
+        Err(AppError::NotFound)
+    } else {
+        Ok(Json("User deleted".to_string()))
     }
 }

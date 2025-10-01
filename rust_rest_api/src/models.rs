@@ -16,6 +16,13 @@ pub struct CreateUser {
     pub email: String,
 }
 
+/// Payload to update a user
+#[derive(Deserialize)]
+pub struct UpdateUser {
+    pub name: Option<String>,
+    pub email: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct HealthResponse {
     pub status: String,

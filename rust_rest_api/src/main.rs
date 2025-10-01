@@ -10,6 +10,7 @@ mod db;
 mod handlers;
 mod models;
 mod routes;
+mod errors;
 
 use db::connect;
 use handlers::AppState;
